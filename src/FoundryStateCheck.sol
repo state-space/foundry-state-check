@@ -15,6 +15,7 @@ contract FoundryStateCheck is TestBase {
         string call;
         string expected;
         string output;
+        string id;
     }
 
     using stdJson for string;
@@ -43,12 +44,12 @@ contract FoundryStateCheck is TestBase {
             TxData memory transaction = transactions[i];
 
             vm.prank(transaction.from);
-            (bool success, bytes memory ret) = transaction.to.call(transaction.input);
+            (bool success, bytes memory ret) = transaction.to.staticcall(transaction.input);
             if (!success) {
-                revert('Expected success');
+                revert(string.concat('Call ', transaction.debug.call, ' reverted: ', vm.toString(ret)));
             }
             if (keccak256(ret) != transaction.outputHash) {
-                revert(string.concat('outputs do not match: ', transaction.debug.call));
+                revert(string.concat('Call ', transaction.debug.call, ' return value did not match expected: ', transaction.debug.expected));
             }
         }
         txIndex += 1;
