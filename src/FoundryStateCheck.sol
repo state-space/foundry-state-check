@@ -37,11 +37,11 @@ contract FoundryStateCheck is TestBase {
     function assertUnchanged() public virtual {
         string memory path = string.concat(testPath, '/expectations.json');
         string memory json = vm.readFile(path);
-        bytes memory transactionsRaw = json.parseRaw(string.concat('.', testId, '[', vm.toString(txIndex), ']'));
-        TxData[] memory transactions = abi.decode(transactionsRaw, (TxData[]));
+        uint numTxs = json.readUint(string.concat('.', testId, '[', vm.toString(txIndex), '].numTxs'));
 
-        for (uint i = 0; i < transactions.length; i++) {
-            TxData memory transaction = transactions[i];
+        for (uint i = 0; i < numTxs; i++) {
+            bytes memory transactionRaw = json.parseRaw(string.concat('.', testId, '[', vm.toString(txIndex), ']', '.txs[', vm.toString(i), ']'));
+            TxData memory transaction = abi.decode(transactionRaw, (TxData));
 
             vm.prank(transaction.from);
             (bool success, bytes memory ret) = transaction.to.staticcall(transaction.input);
