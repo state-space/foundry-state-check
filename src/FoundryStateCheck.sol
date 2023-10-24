@@ -23,9 +23,19 @@ contract FoundryStateCheck is TestBase {
     string private testId;
     uint private txIndex;
     string private testPath;
+    string private expectationsFile;
+    mapping(uint => TxData) txs;
 
     constructor(string memory path) {
         testPath = string.concat('./test/', path);
+        expectationsFile = vm.readFile(string.concat(testPath, '/expectations.json'));
+        bytes memory transactionRaw = expectationsFile.parseRaw(string.concat('.txs'));
+        TxData[] memory transactions = abi.decode(transactionRaw, (TxData[]));
+
+        for (uint i = 0; i < transactions.length; i++) {
+            TxData memory transaction = transactions[i];
+            txs[i] = transaction;
+        }
     }
 
     modifier expectations(string memory id) {
@@ -35,13 +45,11 @@ contract FoundryStateCheck is TestBase {
     }
 
     function assertUnchanged() public virtual {
-        string memory path = string.concat(testPath, '/expectations.json');
-        string memory json = vm.readFile(path);
-        uint numTxs = json.readUint(string.concat('.', testId, '[', vm.toString(txIndex), '].numTxs'));
+        bytes memory transactionRaw = expectationsFile.parseRaw(string.concat('.tests.', testId, '[', vm.toString(txIndex), ']'));
+        uint[] memory transactions = abi.decode(transactionRaw, (uint[]));
 
-        for (uint i = 0; i < numTxs; i++) {
-            bytes memory transactionRaw = json.parseRaw(string.concat('.', testId, '[', vm.toString(txIndex), ']', '.txs[', vm.toString(i), ']'));
-            TxData memory transaction = abi.decode(transactionRaw, (TxData));
+        for (uint i = 0; i < transactions.length; i++) {
+            TxData memory transaction = txs[transactions[i]];
 
             vm.prank(transaction.from);
             (bool success, bytes memory ret) = transaction.to.staticcall(transaction.input);
