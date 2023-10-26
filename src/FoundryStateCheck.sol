@@ -39,7 +39,7 @@ contract FoundryStateCheck is TestBase {
     }
 
     modifier expectations(string memory id) {
-        testId = id;
+        testId = string.concat("['", id, "']");
         txIndex = 0;
         _;
     }
